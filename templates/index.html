@@ -1,32 +1,487 @@
 {% extends "base.html" %} {% block content %}
 
-<div class="main">
-  <div class="title">
-    <h3>Pneumonia Detection</h3>
-    <!-- <p>
-      <small>A web app demo</small>
-    </p> -->
-  </div>
+<div class="dashboard-wrapper">
+  <!-- Top Bar -->
+  <header class="top-bar">
+    <div class="top-bar-left">
+      <div class="brand-logo">
+        <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+        </svg>
+        <div class="brand-text">
+          <span class="brand-title">PneumoScan AI</span>
+          <span class="brand-subtitle">Clinical Imaging Assistant</span>
+        </div>
+      </div>
+      <span class="prototype-badge">AI RESEARCH PROTOTYPE</span>
+    </div>
 
-  <div class="panel">
-    <input id="file-upload" class="hidden" type="file" accept="image/x-png,image/gif,image/jpeg" />
-    <label for="file-upload" id="file-drag" class="upload-box">
-      <div id="upload-caption">Drop image here or click to select</div>
-      <img id="image-preview" class="hidden" />
-    </label>
-  </div>
-  <div style="margin-bottom: 2rem;">
-    <input type="button" value="Submit" class="button" onclick="submitImage();" />
-    <input type="button" value="Clear" class="button" onclick="clearImage();" />
-  </div>
+    <div class="top-bar-right">
+      <div class="system-status">
+        <span class="status-dot"></span>
+        <span class="status-label">Model Online</span>
+      </div>
+      <button id="theme-toggle" class="theme-toggle-btn" type="button" aria-label="Toggle Dark/Light Mode" title="Toggle Dark/Light Theme">
+        <!-- Sun icon (for dark mode) -->
+        <svg class="theme-icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <!-- Moon icon (for light mode) -->
+        <svg class="theme-icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
 
-  <div id="image-box">
-    <img id="image-display" />
-    <div id="pred-result" class="hidden"></div>
-    <svg id="loader" class="hidden" viewBox="0 0 32 32" width="32" height="32">
-      <circle id="spinner" cx="16" cy="16" r="14" fill="none"></circle>
-    </svg>
-  </div>
+  <!-- Main Dashboard Content -->
+  <main class="dashboard-main">
+    
+    <!-- CARD 1: Upload & Image Viewer -->
+    <section class="card upload-viewer-card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          <h3 class="card-title">Chest Radiograph Input & Viewer</h3>
+        </div>
+        <div class="quick-samples-bar">
+          <span class="samples-title">Presets:</span>
+          <button type="button" id="btn-sample-norm" class="preset-pill btn-pill-norm" onclick="loadSample('/static/samples/normal_sample.jpeg');">
+            <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+            </svg>
+            Normal Scan
+          </button>
+          <button type="button" id="btn-sample-pneu" class="preset-pill btn-pill-pneu" onclick="loadSample('/static/samples/pneumonia_sample.jpeg');">
+            <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            Pneumonia Scan
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <!-- Drag & Drop Zone -->
+        <input id="file-upload" class="hidden" type="file" accept="image/png,image/jpeg,image/jpg,image/webp" />
+        <label for="file-upload" id="file-drag" class="drop-zone">
+          <div id="upload-caption" class="drop-zone-content">
+            <svg class="drop-zone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <span class="drop-title">Drop Chest X-Ray here or click to browse</span>
+            <span class="drop-info">Supports JPEG, PNG, WebP (Max 15MB)</span>
+          </div>
+
+          <!-- Interactive Workspace Viewer (Pan & Zoom Canvas Container) -->
+          <div id="viewer-container" class="viewer-container hidden">
+            <div id="viewer-viewport" class="viewer-viewport">
+              <img id="image-preview" class="viewer-image" alt="Radiograph Display" />
+            </div>
+          </div>
+        </label>
+
+        <!-- Validation Error Message Banner -->
+        <div id="upload-error" class="error-banner hidden">
+          <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span id="upload-error-text">Invalid file format or file exceeds 15MB.</span>
+        </div>
+
+        <!-- Viewer Controls Toolbar (Mouse Wheel Zoom, Pan, Brightness, Contrast) -->
+        <div id="viewer-controls" class="viewer-controls hidden">
+          <div class="control-group">
+            <span class="control-label" title="Adjust display brightness">
+              <svg class="ctrl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+              Brightness: <strong id="val-brightness">100%</strong>
+            </span>
+            <input type="range" id="slider-brightness" min="50" max="200" value="100" class="ctrl-slider" oninput="onBrightnessChange(this.value);" />
+          </div>
+
+          <div class="control-group">
+            <span class="control-label" title="Adjust display contrast">
+              <svg class="ctrl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 2a10 10 0 0 1 0 20z"></path>
+              </svg>
+              Contrast: <strong id="val-contrast">100%</strong>
+            </span>
+            <input type="range" id="slider-contrast" min="50" max="200" value="100" class="ctrl-slider" oninput="onContrastChange(this.value);" />
+          </div>
+
+          <div class="control-group zoom-group">
+            <span class="control-label">
+              <svg class="ctrl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                <line x1="11" y1="8" x2="11" y2="14"></line>
+                <line x1="8" y1="11" x2="14" y2="11"></line>
+              </svg>
+              Zoom: <strong id="val-zoom">1.0x</strong>
+            </span>
+            <div class="zoom-buttons">
+              <button type="button" class="ctrl-btn" onclick="zoomAdjust(-0.2);" title="Zoom Out">−</button>
+              <button type="button" class="ctrl-btn" onclick="zoomAdjust(0.2);" title="Zoom In">+</button>
+            </div>
+          </div>
+
+          <button type="button" class="reset-viewer-btn" onclick="resetViewer();" title="Reset display zoom, pan, brightness, and contrast">
+            <svg class="ctrl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+            Reset Viewer
+          </button>
+        </div>
+
+        <p class="viewer-disclaimer">
+          Note: Visual filters apply to the display viewer only. The original unaltered radiograph is transmitted to the neural network.
+        </p>
+
+        <!-- Action Buttons -->
+        <div class="action-bar">
+          <button id="btn-submit" type="button" class="btn btn-primary" onclick="submitImage();">
+            <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            Analyze & Compute Grad-CAM
+          </button>
+          <button id="btn-clear" type="button" class="btn btn-secondary" onclick="clearImage();">
+            <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            Clear
+          </button>
+        </div>
+
+        <!-- Processing State Spinner -->
+        <div id="loader" class="loader-overlay hidden">
+          <div class="pulse-loader">
+            <svg class="loader-svg" viewBox="0 0 50 50">
+              <circle class="loader-circle" cx="25" cy="25" r="20" fill="none" stroke-width="4"></circle>
+            </svg>
+            <p class="loader-label">Extracting spatial feature maps & computing gradients...</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CARD 2: Diagnostic Results, Confidence Band & Calibration -->
+    <section id="results-card" class="card results-card hidden">
+      <div class="card-header">
+        <div class="card-title-group">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          <h3 class="card-title">Inference Analysis & Confidence</h3>
+        </div>
+        <div class="meta-tag-group">
+          <span class="meta-tag">Inference Score: <strong id="raw-score-val">0.0000</strong></span>
+          <span class="meta-tag cutoff-tag">Cutoff: <strong id="active-threshold-label">0.50</strong></span>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <!-- Diagnosis Status & Confidence Band -->
+        <div class="status-band-grid">
+          <div class="status-cell">
+            <span class="cell-label">Predicted Diagnosis</span>
+            <div id="diagnosis-badge" class="badge badge-normal">NORMAL / NEGATIVE</div>
+          </div>
+          <div class="status-cell">
+            <span class="cell-label">Model Confidence Band</span>
+            <div id="band-badge" class="badge band-badge band-high">
+              <svg class="badge-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 8v4l3 3"></path>
+              </svg>
+              <span id="band-text">High Confidence</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dual Visual Confidence Meter -->
+        <div class="meter-card">
+          <div class="meter-header">
+            <div class="meter-prob-item normal-prob-item">
+              <span class="prob-indicator normal-dot"></span>
+              <span class="prob-name">Normal Probability:</span>
+              <strong id="prob-normal-val" class="prob-number">0.0%</strong>
+            </div>
+            <div class="meter-prob-item pneu-prob-item">
+              <span class="prob-indicator pneu-dot"></span>
+              <span class="prob-name">Pneumonia Probability:</span>
+              <strong id="prob-pneumonia-val" class="prob-number">0.0%</strong>
+            </div>
+          </div>
+
+          <div class="meter-track">
+            <div id="meter-normal-fill" class="meter-segment fill-normal" style="width: 50%;"></div>
+            <div id="meter-pneumonia-fill" class="meter-segment fill-pneumonia" style="width: 50%;"></div>
+            <div id="threshold-marker" class="cutoff-marker" style="left: 50%;" title="Decision Threshold"></div>
+          </div>
+
+          <div class="meter-scale">
+            <span>0% (Normal)</span>
+            <span class="scale-center">Decision Cutoff (<span id="scale-cutoff-text">0.50</span>)</span>
+            <span>100% (Pneumonia)</span>
+          </div>
+        </div>
+
+        <!-- Sensitivity & Threshold Calibration Panel -->
+        <div class="calibration-box">
+          <div class="calibration-top">
+            <div class="calibration-info">
+              <span class="cal-title">Decision Threshold Calibration</span>
+              <span class="cal-sub">Adjust sensitivity vs. specificity trade-off (Default: 0.50)</span>
+            </div>
+            <div class="cal-val-badge">
+              Active Cutoff: <strong id="slider-threshold-val">0.50</strong>
+            </div>
+          </div>
+
+          <input type="range" id="threshold-slider" min="10" max="90" value="50" step="5" class="range-slider" oninput="onThresholdChange(this.value);" />
+
+          <div class="preset-buttons-row">
+            <button type="button" id="btn-thresh-35" class="preset-cutoff-btn" onclick="setThreshold(35);">
+              <svg class="btn-sm-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              High Sensitivity (0.35) <small>Screening Mode</small>
+            </button>
+            <button type="button" id="btn-thresh-50" class="preset-cutoff-btn active" onclick="setThreshold(50);">
+              <svg class="btn-sm-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+              Balanced (0.50) <small>Default Standard</small>
+            </button>
+            <button type="button" id="btn-thresh-75" class="preset-cutoff-btn" onclick="setThreshold(75);">
+              <svg class="btn-sm-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+              High Specificity (0.75) <small>Strict Mode</small>
+            </button>
+          </div>
+        </div>
+
+        <!-- Driving Prediction Caption & Computed Zone Activation -->
+        <div class="insights-container">
+          <div class="insight-row">
+            <svg class="insight-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span id="driving-caption-text" class="driving-text">Regions driving prediction: PNEUMONIA</span>
+          </div>
+          <div class="insight-row secondary-insight">
+            <svg class="insight-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            <span id="attention-summary-text" class="zone-text">Highest activation: lower zone, image-right</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CARD 3: Explainable AI Grad-CAM Interactive Viewer -->
+    <section id="xai-card" class="card xai-card hidden">
+      <div class="card-header">
+        <div class="card-title-group">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <h3 class="card-title">Explainable AI: Grad-CAM Neural Attributions</h3>
+        </div>
+        <div class="view-mode-tabs">
+          <button id="tab-split" type="button" class="tab-item active" onclick="switchMode('split');">
+            <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="3" x2="12" y2="21"></line>
+              <polyline points="8 8 4 12 8 16"></polyline>
+              <polyline points="16 8 20 12 16 16"></polyline>
+            </svg>
+            Comparison Slider
+          </button>
+          <button id="tab-opacity" type="button" class="tab-item" onclick="switchMode('opacity');">
+            <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M12 3v18"></path>
+            </svg>
+            Opacity Blend
+          </button>
+          <button id="tab-side" type="button" class="tab-item" onclick="switchMode('side');">
+            <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="8" height="18" rx="1"></rect>
+              <rect x="13" y="3" width="8" height="18" rx="1"></rect>
+            </svg>
+            Side-by-Side
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <!-- MODE 1: Comparison Curtain Slider -->
+        <div id="view-split" class="xai-panel">
+          <div class="curtain-container" id="slider-box">
+            <!-- Background: Grad-CAM Overlay -->
+            <img id="split-overlay-img" class="curtain-img" alt="Grad-CAM Overlay" />
+            <span class="curtain-tag tag-right">Grad-CAM Attribution</span>
+
+            <!-- Clipped Foreground: Original X-Ray -->
+            <div id="slider-clipper" class="curtain-clipper">
+              <img id="split-orig-img" class="curtain-img" alt="Original Radiograph" />
+              <span class="curtain-tag tag-left">Original Radiograph</span>
+            </div>
+
+            <!-- Divider Line & Circular Grab Handle -->
+            <div id="slider-handle" class="curtain-handle">
+              <span class="arrow-left">◀</span>
+              <span class="handle-pip"></span>
+              <span class="arrow-right">▶</span>
+            </div>
+
+            <!-- Transparent Range Input -->
+            <input type="range" id="split-range" min="0" max="100" value="50" class="curtain-input" oninput="onSplitSlide(this.value);" />
+          </div>
+          <p class="slider-guidance">Drag slider horizontally to compare original anatomy with proportional activation heatmap</p>
+        </div>
+
+        <!-- MODE 2: Opacity Blend -->
+        <div id="view-opacity" class="xai-panel hidden">
+          <div class="blend-container">
+            <div class="blend-stack">
+              <img id="opacity-orig-img" class="blend-img base-layer" alt="Base Scan" />
+              <img id="opacity-heat-img" class="blend-img heat-layer" alt="Heatmap Layer" style="opacity: 0.75;" />
+            </div>
+            <div class="blend-toolbar">
+              <div class="blend-label-row">
+                <span class="blend-label">Heatmap Overlay Opacity: <strong id="opacity-percent">75%</strong></span>
+              </div>
+              <input type="range" id="opacity-slider" min="0" max="100" value="75" class="range-slider" oninput="onOpacityChange(this.value);" />
+              <div class="blend-ticks">
+                <span>0% (Raw Radiograph)</span>
+                <span>50% (Balanced Blend)</span>
+                <span>100% (Pure Attribution)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODE 3: Side-by-Side Dual View -->
+        <div id="view-side" class="xai-panel hidden">
+          <div class="side-grid">
+            <div class="side-item">
+              <div class="side-caption">Original Radiograph</div>
+              <img id="side-orig-img" class="side-display-img" alt="Original Scan" />
+            </div>
+            <div class="side-item">
+              <div class="side-caption">Grad-CAM Proportional Overlay</div>
+              <img id="side-overlay-img" class="side-display-img" alt="Grad-CAM Scan" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Heatmap Colormap Scale Legend -->
+        <div class="colormap-legend">
+          <span class="legend-scale-label">Low influence</span>
+          <div class="legend-bar-gradient"></div>
+          <span class="legend-scale-label high-influence">High influence on prediction</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CARD 4: Recent Scans History (localStorage) -->
+    <section class="card history-card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <h3 class="card-title">Recent Scans History</h3>
+          <span id="history-count" class="count-badge">0 scans</span>
+        </div>
+        <button type="button" class="clear-history-btn" onclick="clearHistory();" title="Clear all stored scans from local storage">
+          <svg class="btn-sm-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          Clear History
+        </button>
+      </div>
+
+      <div class="card-body">
+        <div class="history-table-wrapper">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th style="width: 70px;">Scan</th>
+                <th>Timestamp</th>
+                <th>Diagnosis</th>
+                <th>P(Pneumonia)</th>
+                <th>Confidence Band</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="history-table-body">
+              <tr id="history-empty-row">
+                <td colspan="6" class="history-empty">
+                  No scans recorded yet. Upload a chest radiograph to start analysis.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Mandatory Prototype Disclaimer Footer -->
+  <footer class="clinical-footer">
+    <p class="disclaimer-text">
+      Educational prototype. Not a medical device. Not for diagnosis.
+    </p>
+  </footer>
 </div>
 
 {% endblock %}

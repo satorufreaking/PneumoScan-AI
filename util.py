@@ -27,3 +27,15 @@ def np_to_base64(img_np):
     img.save(buffered, format="PNG")
     return u"data:image/png;base64," + base64.b64encode(buffered.getvalue()).decode("ascii")
 
+
+def pil_to_base64(pil_img, format="JPEG", quality=90):
+    """
+    Convert PIL Image to base64 data URI string
+    """
+    buffered = BytesIO()
+    if pil_img.mode in ("RGBA", "P") and format.upper() == "JPEG":
+        pil_img = pil_img.convert("RGB")
+    pil_img.save(buffered, format=format, quality=quality)
+    mime = "image/png" if format.upper() == "PNG" else "image/jpeg"
+    return f"data:{mime};base64," + base64.b64encode(buffered.getvalue()).decode("ascii")
+
